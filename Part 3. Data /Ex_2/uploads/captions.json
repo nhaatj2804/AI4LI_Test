@@ -19,5 +19,26 @@
             "end_frame": 300,
             "text": "vcl luon dau catmoi"
         }
+    ],
+    "upload_eda51e7dc097d7a1": [
+        {
+            "start_frame": 1,
+            "end_frame": 70,
+            "text": "Xin chao"
+        }
+    ],
+    "upload_b3903304f576dd83": [
+        {
+            "start_frame": 1,
+            "end_frame": 70,
+            "text": "Xin chào"
+        }
+    ],
+    "upload_1e11cd18398f2d96": [
+        {
+            "start_frame": 1,
+            "end_frame": 300,
+            "text": "Day la caption test"
+        }
     ]
 }
