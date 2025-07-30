@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Language Video Caption Tool</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='/css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Sign Language Video Caption Tool</h1>
+      </header>
+
+      <main>
+        <div class="video-section">
+          <div class="video-container">
+            <div id="frameViewer" class="frame-viewer">
+              <img id="currentFrame" src="" alt="Current frame" />
+            </div>
+
+            <div class="video-controls">
+              <button id="playPauseBtn" title="Play/Pause">▶</button>
+              <button id="prevFrameBtn" title="Previous Frame">⏮</button>
+              <button id="nextFrameBtn" title="Next Frame">⏭</button>
+
+              <div class="frame-navigation">
+                <input type="range" id="frameSlider" min="0" value="0" />
+                <div class="frame-info">
+                  <span>Frame: </span>
+                  <span id="currentFrameNumber">0</span>
+                  <span> / </span>
+                  <span id="totalFrames">0</span>
+                </div>
+              </div>
+
+              <input
+                type="number"
+                id="jumpToFrame"
+                placeholder="Jump to frame"
+              />
+              <button id="jumpBtn">Jump</button>
+            </div>
+          </div>
+
+          <div class="upload-container">
+            <input type="file" id="videoUpload" accept="video/*" />
+            <button id="uploadBtn">Upload Video</button>
+            <div id="uploadProgress" class="upload-progress">
+              <div class="progress-bar"></div>
+              <span class="progress-text">Processing video...</span>
+            </div>
+            <button id="downloadBtn" disabled>Download Video</button>
+          </div>
+        </div>
+
+        <div class="workspace">
+          <div class="frames-preview">
+            <h3>Frames Preview</h3>
+            <div id="framesPreview" class="frames-grid"></div>
+          </div>
+
+          <div class="caption-section">
+            <div class="caption-editor">
+              <h3>Add/Edit Caption</h3>
+              <div class="frame-range">
+                <div class="range-input">
+                  <label>Start Frame:</label>
+                  <input type="number" id="captionStartFrame" min="0" />
+                  <button id="setStartFrame">Set Current</button>
+                </div>
+                <div class="range-input">
+                  <label>End Frame:</label>
+                  <input type="number" id="captionEndFrame" min="0" />
+                  <button id="setEndFrame">Set Current</button>
+                </div>
+              </div>
+              <textarea
+                id="captionText"
+                placeholder="Enter caption for selected frame range..."
+                rows="4"
+              ></textarea>
+              <button id="saveCaption">Save Caption</button>
+            </div>
+
+            <div class="captions-list">
+              <h3>Captions</h3>
+              <div id="captionsList" class="captions-container"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <div id="keyboardShortcuts" class="keyboard-shortcuts">
+        <h4>Keyboard Shortcuts</h4>
+        <ul>
+          <li><kbd>Space</kbd> Play/Pause</li>
+          <li><kbd>←</kbd> Previous frame</li>
+          <li><kbd>→</kbd> Next frame</li>
+          <li><kbd>Ctrl</kbd> + <kbd>S</kbd> Save caption</li>
+          <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> Jump to frame</li>
+        </ul>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+  </body>
+</html>
