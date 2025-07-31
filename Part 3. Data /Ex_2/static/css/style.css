@@ -163,14 +163,25 @@ main {
     background: #f1f1f1;
     border-radius: 4px;
     overflow: hidden;
-    cursor: pointer;
+    cursor: grab;
     border: 2px solid transparent;
     transition: all 0.2s ease;
+    user-select: none;
 }
 
 .frame-thumbnail:hover {
     transform: scale(1.02);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.frame-thumbnail.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.frame-thumbnail.ghost {
+    background: #e8f5e9;
+    border: 2px dashed #4CAF50;
 }
 
 .frame-thumbnail.active {

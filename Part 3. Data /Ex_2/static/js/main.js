@@ -32,6 +32,7 @@ let currentFrameIndex = 0;
 let isPlaying = false;
 let playbackInterval = null;
 let fps = 30;
+let framesOrder = []; // Store the current order of frames
 
 // Utility Functions
 function showError(message) {
@@ -170,8 +171,87 @@ function updateFramesPreview() {
   framesPreview.innerHTML = "";
   frames.forEach((frame, index) => {
     const preview = createFramePreview(frame, index);
+    preview.dataset.index = index;
     framesPreview.appendChild(preview);
   });
+
+  // Initialize Sortable if not already initialized
+  if (!framesPreview.sortable) {
+    framesPreview.sortable = new Sortable(framesPreview, {
+      animation: 150,
+      ghostClass: "ghost",
+      dragClass: "dragging",
+      onEnd: async (evt) => {
+        if (!currentVideoId) {
+          showError("No video loaded");
+          return;
+        }
+
+        const oldIndex = evt.oldIndex;
+        const newIndex = evt.newIndex;
+
+        // Create backup of current frame order
+        const originalFrames = [...frames];
+
+        try {
+          // Update frames array
+          const movedFrame = frames.splice(oldIndex, 1)[0];
+          frames.splice(newIndex, 0, movedFrame);
+
+          // Update currentFrameIndex if the current frame was moved
+          if (currentFrameIndex === oldIndex) {
+            currentFrameIndex = newIndex;
+          } else if (
+            currentFrameIndex > oldIndex &&
+            currentFrameIndex <= newIndex
+          ) {
+            currentFrameIndex--;
+          } else if (
+            currentFrameIndex < oldIndex &&
+            currentFrameIndex >= newIndex
+          ) {
+            currentFrameIndex++;
+          }
+
+          // Save the new order
+          const response = await fetch(`/reorder-frames/${currentVideoId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              order: frames.map((frame) => frame.path.split("/").pop()),
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save frame order");
+          }
+
+          // Update the frame numbers and slider
+          frameSlider.max = frames.length - 1;
+          totalFrames.textContent = frames.length;
+          updateFrameDisplay();
+
+          // Update all frame numbers
+          const thumbnails = framesPreview.querySelectorAll(".frame-thumbnail");
+          thumbnails.forEach((thumb, idx) => {
+            thumb.querySelector(".frame-number").textContent = idx + 1;
+          });
+        } catch (error) {
+          showError("Failed to save frame order: " + error.message);
+          // Revert the change on error
+          frames = originalFrames;
+          currentFrameIndex =
+            currentFrameIndex >= frames.length
+              ? frames.length - 1
+              : currentFrameIndex;
+          updateFramesPreview();
+          updateFrameDisplay();
+        }
+      },
+    });
+  }
 }
 
 // Caption Controls
@@ -218,8 +298,29 @@ uploadBtn.addEventListener("click", async () => {
 
     const data = await response.json();
     currentVideoId = data.filename;
-    frames = data.frames;
     fps = data.fps || 30;
+
+    // Load frames order from frame_order.json
+    try {
+      const orderResponse = await fetch(`/frame-order/${currentVideoId}`);
+      if (!orderResponse.ok) {
+        throw new Error("Failed to load frame order");
+      }
+      const frameOrder = await orderResponse.json();
+
+      // Organize frames according to saved order if available
+      if (frameOrder && frameOrder.length > 0) {
+        const frameMap = new Map(
+          data.frames.map((frame) => [frame.path.split("/").pop(), frame])
+        );
+        frames = frameOrder.map((frameName) => frameMap.get(frameName));
+      } else {
+        frames = data.frames;
+      }
+    } catch (error) {
+      console.warn("Failed to load frame order, using default order:", error);
+      frames = data.frames;
+    }
 
     // Setup frame navigation
     frameSlider.max = frames.length - 1;

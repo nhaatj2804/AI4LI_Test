@@ -8,6 +8,7 @@
       rel="stylesheet"
       href="{{ url_for('static', path='/css/style.css') }}"
     />
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   </head>
   <body>
     <div class="container">
@@ -59,8 +60,8 @@
 
         <div class="workspace">
           <div class="frames-preview">
-            <h3>Frames Preview</h3>
-            <div id="framesPreview" class="frames-grid"></div>
+            <h3>Frames Preview (Drag to reorder)</h3>
+            <div id="framesPreview" class="frames-grid sortable"></div>
           </div>
 
           <div class="caption-section">

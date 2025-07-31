@@ -37,6 +37,9 @@ class CaptionCreate(BaseModel):
     end_frame: int
     text: str
 
+class FrameOrder(BaseModel):
+    order: list[str]  # List of frame filenames in desired order
+
 class VideoManager:
     def __init__(self, video_path, frames_dir):
         self.video_path = Path(video_path)
@@ -164,7 +167,17 @@ class VideoManager:
     def create_video_with_captions(self, output_path, captions_data, fps=30):
         """Create video with captions burned in"""
         print(f"Creating video with captions from frames in {self.frame_dir}")
-        frame_files = sorted(self.frame_dir.glob("*.jpg"))
+        # Load custom frame order if available
+        frame_orders = load_frame_order()
+        ordered_frames = frame_orders.get(self.video_id, [])
+        
+        if ordered_frames:
+            # Use custom order
+            frame_files = [self.frame_dir / frame_name for frame_name in ordered_frames]
+        else:
+            # Fallback to default order
+            frame_files = sorted(self.frame_dir.glob("*.jpg"))
+            
         if not frame_files:
             raise ValueError("No frames found")
             
@@ -207,7 +220,17 @@ class VideoManager:
     def create_video(self, output_path, fps=30):
         """Create video without captions (original method kept for backward compatibility)"""
         print(f"Creating video from frames in {self.frame_dir}")
-        frame_files = sorted(self.frame_dir.glob("*.jpg"))
+        # Load custom frame order if available
+        frame_orders = load_frame_order()
+        ordered_frames = frame_orders.get(self.video_id, [])
+        
+        if ordered_frames:
+            # Use custom order
+            frame_files = [self.frame_dir / frame_name for frame_name in ordered_frames]
+        else:
+            # Fallback to default order
+            frame_files = sorted(self.frame_dir.glob("*.jpg"))
+            
         if not frame_files:
             raise ValueError("No frames found")
             
@@ -235,6 +258,18 @@ def load_captions():
             return json.load(f)
     return {}
 
+def load_frame_order():
+    order_file = UPLOAD_DIR / "frame_order.json"
+    if order_file.exists():
+        with open(order_file, "r", encoding='utf-8') as f:
+            return json.load(f)
+    return {}
+
+def save_frame_order(frame_orders):
+    order_file = UPLOAD_DIR / "frame_order.json"
+    with open(order_file, "w", encoding='utf-8') as f:
+        json.dump(frame_orders, f, indent=4)
+
 def save_captions(captions):
     caption_file = UPLOAD_DIR / "captions.json"
     with open(caption_file, "w", encoding='utf-8') as f:
@@ -249,6 +284,7 @@ async def home(request: Request):
 
 @app.post("/upload")
 async def upload_video(file: UploadFile = File(...)):
+    """Upload a video file and extract frames"""
     try:
         # Create a unique filename
         file_ext = Path(file.filename).suffix.lower()
@@ -277,6 +313,13 @@ async def upload_video(file: UploadFile = File(...)):
                 "frames": frames_info,
                 "fps": fps if fps > 0 else 30
             }
+            
+            # Initialize frame order with default sequential order
+            frame_orders = load_frame_order()
+            frame_orders[video_path.stem] = [
+                frame["path"].split("/")[-1] for frame in frames_info
+            ]
+            save_frame_order(frame_orders)
             
             return video_info
             
@@ -324,6 +367,14 @@ async def get_captions(video_id: str):
     captions = load_captions()
     return captions.get(video_id, [])
 
+@app.get("/frame-order/{video_id}")
+async def get_frame_order(video_id: str):
+    try:
+        frame_orders = load_frame_order()
+        return frame_orders.get(video_id, [])
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.get("/download/{video_id}")
 async def download_video(video_id: str):
     try:
@@ -353,6 +404,22 @@ async def download_video(video_id: str):
         )
     except Exception as e:
         print(f"Error creating video with captions: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/reorder-frames/{video_id}")
+async def reorder_frames(video_id: str, frame_order: FrameOrder):
+    try:
+        # Load existing frame orders
+        frame_orders = load_frame_order()
+        
+        # Update order for this video
+        frame_orders[video_id] = frame_order.order
+        
+        # Save updated orders
+        save_frame_order(frame_orders)
+        
+        return {"status": "success"}
+    except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
